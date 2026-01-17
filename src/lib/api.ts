@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "https://dreams-1-ia11.onrender.com/api/v1";
 
 interface ApiOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: any;
   schoolId?: string;
   token?: string;
@@ -29,16 +29,51 @@ export async function apiRequest<T>(
   if (body) {
     const payload = schoolId ? { ...body, school_id: schoolId } : body;
     config.body = JSON.stringify(payload);
+    
+    // Debug logging for auth endpoints
+    if (endpoint.includes('/login') || endpoint.includes('/register')) {
+      console.log(`API Request: ${method} ${API_BASE}${endpoint}`);
+      console.log('Request payload:', payload);
+    }
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, config);
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, config);
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { message: `HTTP error! status: ${response.status}` };
+      }
+      
+      // Handle different error response formats
+      const errorMessage = errorData.detail || errorData.message || errorData.error || `HTTP error! status: ${response.status}`;
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      (error as any).data = errorData;
+      throw error;
+    }
+
+    // Handle empty responses
+    const text = await response.text();
+    if (!text) {
+      return {} as T;
+    }
+
+    return JSON.parse(text);
+  } catch (error: any) {
+    // Re-throw if it's already our formatted error
+    if (error.message && error.status) {
+      throw error;
+    }
+    // Handle network errors
+    if (error.message === "Failed to fetch" || error.message.includes("NetworkError")) {
+      throw new Error("Network error: Could not connect to the server. Please check your internet connection and ensure the API server is running.");
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // Schools API
@@ -46,18 +81,20 @@ export const schoolsApi = {
   getAll: (token?: string) => apiRequest<School[]>("/schools", { token }),
   create: (data: Omit<School, "id">, token?: string) =>
     apiRequest<School>("/schools", { method: "POST", body: data, token }),
+  update: (id: string, data: Partial<School>, token?: string) =>
+    apiRequest<School>(`/schools/${id}`, { method: "PUT", body: data, token }),
   delete: (id: string, token?: string) =>
     apiRequest<void>(`/schools/${id}`, { method: "DELETE", token }),
 };
 
-// Auth API
+// Auth API - Using /login endpoint (verified to exist)
 export const authApi = {
   login: (data: { email: string; password: string }) =>
     apiRequest<{ access_token: string; refresh_token: string; user: any }>("/login", { method: "POST", body: data }),
   register: (data: { email: string; password: string; role: string }) =>
     apiRequest<{ access_token: string; refresh_token: string; user: any }>("/register", { method: "POST", body: data }),
   refreshToken: (refreshToken: string) =>
-    apiRequest<{ access_token: string }>("/refresh-token", { method: "GET" }),
+    apiRequest<{ access_token: string }>("/refresh", { method: "POST", body: { refresh_token: refreshToken } }),
   logout: (token?: string) =>
     apiRequest<void>("/logout", { method: "POST", token }),
   getProfile: (token?: string) =>
@@ -67,11 +104,11 @@ export const authApi = {
 // Students API
 export const studentsApi = {
   getBySchool: (schoolId: string, token?: string) =>
-    apiRequest<Student[]>(`/students/school/${schoolId}`, { token }),
+    apiRequest<Student[]>(`/students?school_id=${schoolId}`, { token }),
   create: (data: Omit<Student, "id">, schoolId: string, token?: string) =>
-    apiRequest<Student>("/students", { method: "POST", body: data, schoolId, token }),
+    apiRequest<Student>("/students", { method: "POST", body: { ...data, school_id: schoolId }, token }),
   update: (id: string, data: Partial<Student>, schoolId: string, token?: string) =>
-    apiRequest<Student>(`/students/${id}`, { method: "PUT", body: data, schoolId, token }),
+    apiRequest<Student>(`/students/${id}`, { method: "PUT", body: { ...data, school_id: schoolId }, token }),
   delete: (id: string, token?: string) =>
     apiRequest<void>(`/students/${id}`, { method: "DELETE", token }),
 };
@@ -79,11 +116,11 @@ export const studentsApi = {
 // Teachers API
 export const teachersApi = {
   getBySchool: (schoolId: string, token?: string) =>
-    apiRequest<Teacher[]>(`/teachers/school/${schoolId}`, { token }),
+    apiRequest<Teacher[]>(`/teachers?school_id=${schoolId}`, { token }),
   create: (data: Omit<Teacher, "id">, schoolId: string, token?: string) =>
-    apiRequest<Teacher>("/teachers", { method: "POST", body: data, schoolId, token }),
+    apiRequest<Teacher>("/teachers", { method: "POST", body: { ...data, school_id: schoolId }, token }),
   update: (id: string, data: Partial<Teacher>, schoolId: string, token?: string) =>
-    apiRequest<Teacher>(`/teachers/${id}`, { method: "PUT", body: data, schoolId, token }),
+    apiRequest<Teacher>(`/teachers/${id}`, { method: "PUT", body: { ...data, school_id: schoolId }, token }),
   delete: (id: string, token?: string) =>
     apiRequest<void>(`/teachers/${id}`, { method: "DELETE", token }),
 };
@@ -91,11 +128,15 @@ export const teachersApi = {
 // Classes API
 export const classesApi = {
   getBySchool: (schoolId: string, token?: string) =>
-    apiRequest<ClassItem[]>(`/classes/school/${schoolId}`, { token }),
+    apiRequest<ClassItem[]>(`/classes?school_id=${schoolId}`, { token }),
   create: (data: Omit<ClassItem, "id">, schoolId: string, token?: string) =>
-    apiRequest<ClassItem>("/classes", { method: "POST", body: data, schoolId, token }),
+    apiRequest<ClassItem>("/classes", { method: "POST", body: { ...data, school_id: schoolId }, token }),
+  update: (id: string, data: Partial<ClassItem>, schoolId: string, token?: string) =>
+    apiRequest<ClassItem>(`/classes/${id}`, { method: "PUT", body: { ...data, school_id: schoolId }, token }),
   updateSubjects: (id: string, subjects: string[], token?: string) =>
     apiRequest<ClassItem>(`/classes/${id}/subjects`, { method: "PUT", body: { subjects }, token }),
+  delete: (id: string, token?: string) =>
+    apiRequest<void>(`/classes/${id}`, { method: "DELETE", token }),
 };
 
 // Lesson Plans API
@@ -103,19 +144,23 @@ export const lessonPlansApi = {
   getByClass: (classNo: string, subject: string, schoolId: string, token?: string) =>
     apiRequest<LessonPlan[]>(`/lesson-plans?classNo=${classNo}&subject=${subject}&school_id=${schoolId}`, { token }),
   create: (data: Omit<LessonPlan, "id">, schoolId: string, token?: string) =>
-    apiRequest<LessonPlan>("/lesson-plans", { method: "POST", body: data, schoolId, token }),
+    apiRequest<LessonPlan>("/lesson-plans", { method: "POST", body: { ...data, school_id: schoolId }, token }),
   update: (id: string, data: Partial<LessonPlan>, schoolId: string, token?: string) =>
-    apiRequest<LessonPlan>(`/lesson-plans/${id}`, { method: "PUT", body: data, schoolId, token }),
+    apiRequest<LessonPlan>(`/lesson-plans/${id}`, { method: "PUT", body: { ...data, school_id: schoolId }, token }),
+  delete: (id: string, token?: string) =>
+    apiRequest<void>(`/lesson-plans/${id}`, { method: "DELETE", token }),
 };
 
 // Timetables API
 export const timetablesApi = {
   getByClass: (classId: string, schoolId: string, token?: string) =>
-    apiRequest<Timetable[]>(`/timetables/class/${classId}?school_id=${schoolId}`, { token }),
+    apiRequest<Timetable[]>(`/timetables?class_id=${classId}&school_id=${schoolId}`, { token }),
   create: (data: Omit<Timetable, "id">, schoolId: string, token?: string) =>
-    apiRequest<Timetable>("/timetables/class", { method: "POST", body: data, schoolId, token }),
+    apiRequest<Timetable>("/timetables", { method: "POST", body: { ...data, school_id: schoolId }, token }),
+  update: (id: string, data: Partial<Timetable>, schoolId: string, token?: string) =>
+    apiRequest<Timetable>(`/timetables/${id}`, { method: "PUT", body: { ...data, school_id: schoolId }, token }),
   generateTeachers: (schoolId: string, token?: string) =>
-    apiRequest<any>("/timetables/generate-teachers", { method: "POST", body: { school_id: schoolId }, token }),
+    apiRequest<any>("/timetables/generate", { method: "POST", body: { school_id: schoolId }, token }),
 };
 
 // Types

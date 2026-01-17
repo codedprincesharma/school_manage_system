@@ -55,9 +55,12 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
+          // Show more detailed error message
+          const errorMessage = error.message || "Invalid email or password";
+          console.error("Login failed:", error);
           toast({
             title: "Login Failed",
-            description: error.message || "Invalid email or password",
+            description: errorMessage,
             variant: "destructive",
           });
         } else {

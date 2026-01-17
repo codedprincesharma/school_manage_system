@@ -59,7 +59,7 @@ export default function Dashboard() {
     };
 
     fetchStats();
-  }, [activeSchool, session]);
+  }, [activeSchool, token]);
 
   return (
     <MainLayout title="Dashboard" subtitle="Overview of your school management system">
