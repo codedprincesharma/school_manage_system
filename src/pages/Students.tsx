@@ -39,7 +39,7 @@ const CLASS_OPTIONS = ["PG", "LKG", "UKG", "1", "2", "3", "4", "5", "6", "7", "8
 
 export default function Students() {
   const { activeSchool } = useSchool();
-  const { session } = useAuth();
+  const { token } = useAuth();
   const { toast } = useToast();
   
   const [students, setStudents] = useState<Student[]>([]);
@@ -65,14 +65,14 @@ export default function Students() {
       setStudents([]);
       setIsLoading(false);
     }
-  }, [activeSchool, session]);
+  }, [activeSchool, token]);
 
   const fetchStudents = async () => {
     if (!activeSchool) return;
     
     setIsLoading(true);
     try {
-      const data = await studentsApi.getBySchool(activeSchool.id, session?.access_token);
+      const data = await studentsApi.getBySchool(activeSchool.id, token);
       setStudents(data);
     } catch (error) {
       toast({
@@ -109,12 +109,12 @@ export default function Students() {
           editingStudent.id,
           formData,
           activeSchool.id,
-          session?.access_token
+          token
         );
         setStudents(students.map((s) => (s.id === updated.id ? updated : s)));
         toast({ title: "Success", description: "Student updated successfully" });
       } else {
-        const newStudent = await studentsApi.create(formData, activeSchool.id, session?.access_token);
+        const newStudent = await studentsApi.create(formData, activeSchool.id, token);
         setStudents([...students, newStudent]);
         toast({ title: "Success", description: "Student added successfully" });
       }
@@ -148,7 +148,7 @@ export default function Students() {
     if (!deleteId) return;
 
     try {
-      await studentsApi.delete(deleteId, session?.access_token);
+      await studentsApi.delete(deleteId, token);
       setStudents(students.filter((s) => s.id !== deleteId));
       toast({ title: "Success", description: "Student deleted successfully" });
     } catch (error: any) {

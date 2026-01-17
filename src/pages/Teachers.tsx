@@ -35,7 +35,7 @@ const SUBJECT_OPTIONS = ["English", "Hindi", "Maths", "GK", "SST", "Science", "C
 
 export default function Teachers() {
   const { activeSchool } = useSchool();
-  const { session } = useAuth();
+  const { token } = useAuth();
   const { toast } = useToast();
 
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -60,14 +60,14 @@ export default function Teachers() {
       setTeachers([]);
       setIsLoading(false);
     }
-  }, [activeSchool, session]);
+  }, [activeSchool, token]);
 
   const fetchTeachers = async () => {
     if (!activeSchool) return;
 
     setIsLoading(true);
     try {
-      const data = await teachersApi.getBySchool(activeSchool.id, session?.access_token);
+      const data = await teachersApi.getBySchool(activeSchool.id, token);
       setTeachers(data);
     } catch (error) {
       toast({
@@ -103,12 +103,12 @@ export default function Teachers() {
           editingTeacher.id,
           formData,
           activeSchool.id,
-          session?.access_token
+          token
         );
         setTeachers(teachers.map((t) => (t.id === updated.id ? updated : t)));
         toast({ title: "Success", description: "Teacher updated successfully" });
       } else {
-        const newTeacher = await teachersApi.create(formData, activeSchool.id, session?.access_token);
+        const newTeacher = await teachersApi.create(formData, activeSchool.id, token);
         setTeachers([...teachers, newTeacher]);
         toast({ title: "Success", description: "Teacher added successfully" });
       }
@@ -141,7 +141,7 @@ export default function Teachers() {
     if (!deleteId) return;
 
     try {
-      await teachersApi.delete(deleteId, session?.access_token);
+      await teachersApi.delete(deleteId, token);
       setTeachers(teachers.filter((t) => t.id !== deleteId));
       toast({ title: "Success", description: "Teacher deleted successfully" });
     } catch (error: any) {

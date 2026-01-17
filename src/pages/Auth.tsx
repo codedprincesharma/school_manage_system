@@ -18,6 +18,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   
@@ -67,7 +68,7 @@ export default function Auth() {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(email, password, role);
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
@@ -158,6 +159,25 @@ export default function Auth() {
                 <p className="text-sm text-destructive">{errors.password}</p>
               )}
             </div>
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-sm font-medium">
+                  Role
+                </Label>
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-3 py-2 bg-secondary/50 border border-border/50 rounded-md focus:border-primary focus:outline-none"
+                >
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="principal">Principal</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            )}
 
             <Button
               type="submit"

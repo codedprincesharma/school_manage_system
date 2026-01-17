@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Dashboard() {
   const { schools, setSchools, activeSchool } = useSchool();
-  const { session } = useAuth();
+  const { token } = useAuth();
   const [stats, setStats] = useState({
     students: 0,
     teachers: 0,
@@ -20,7 +20,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchSchools = async () => {
       try {
-        const data = await schoolsApi.getAll(session?.access_token);
+        const data = await schoolsApi.getAll(token);
         setSchools(data);
       } catch (error) {
         console.error("Failed to fetch schools:", error);
@@ -28,7 +28,7 @@ export default function Dashboard() {
     };
 
     fetchSchools();
-  }, [session, setSchools]);
+  }, [token, setSchools]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -41,9 +41,9 @@ export default function Dashboard() {
       setLoading(true);
       try {
         const [students, teachers, classes] = await Promise.all([
-          studentsApi.getBySchool(activeSchool.id, session?.access_token).catch(() => []),
-          teachersApi.getBySchool(activeSchool.id, session?.access_token).catch(() => []),
-          classesApi.getBySchool(activeSchool.id, session?.access_token).catch(() => []),
+          studentsApi.getBySchool(activeSchool.id, token).catch(() => []),
+          teachersApi.getBySchool(activeSchool.id, token).catch(() => []),
+          classesApi.getBySchool(activeSchool.id, token).catch(() => []),
         ]);
 
         setStats({

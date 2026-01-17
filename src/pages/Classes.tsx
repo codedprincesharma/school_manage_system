@@ -39,7 +39,7 @@ const getDefaultSubjects = (className: string): string[] => {
 
 export default function Classes() {
   const { activeSchool } = useSchool();
-  const { session } = useAuth();
+  const { token } = useAuth();
   const { toast } = useToast();
 
   const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -61,14 +61,14 @@ export default function Classes() {
       setClasses([]);
       setIsLoading(false);
     }
-  }, [activeSchool, session]);
+  }, [activeSchool, token]);
 
   const fetchClasses = async () => {
     if (!activeSchool) return;
 
     setIsLoading(true);
     try {
-      const data = await classesApi.getBySchool(activeSchool.id, session?.access_token);
+      const data = await classesApi.getBySchool(activeSchool.id, token);
       setClasses(data);
     } catch (error) {
       toast({
@@ -107,7 +107,7 @@ export default function Classes() {
 
     try {
       if (editingClass) {
-        await classesApi.updateSubjects(editingClass.id, formData.subjects, session?.access_token);
+        await classesApi.updateSubjects(editingClass.id, formData.subjects, token);
         setClasses(
           classes.map((c) =>
             c.id === editingClass.id ? { ...c, subjects: formData.subjects } : c
@@ -115,7 +115,7 @@ export default function Classes() {
         );
         toast({ title: "Success", description: "Class subjects updated" });
       } else {
-        const newClass = await classesApi.create(formData, activeSchool.id, session?.access_token);
+        const newClass = await classesApi.create(formData, activeSchool.id, token);
         setClasses([...classes, newClass]);
         toast({ title: "Success", description: "Class added successfully" });
       }

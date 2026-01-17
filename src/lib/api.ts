@@ -1,4 +1,4 @@
-const API_BASE = "https://dreams-1-ia11.onrender.com/api/v1";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://dreams-1-ia11.onrender.com/api/v1";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -48,6 +48,20 @@ export const schoolsApi = {
     apiRequest<School>("/schools", { method: "POST", body: data, token }),
   delete: (id: string, token?: string) =>
     apiRequest<void>(`/schools/${id}`, { method: "DELETE", token }),
+};
+
+// Auth API
+export const authApi = {
+  login: (data: { email: string; password: string }) =>
+    apiRequest<{ access_token: string; refresh_token: string; user: any }>("/login", { method: "POST", body: data }),
+  register: (data: { email: string; password: string; role: string }) =>
+    apiRequest<{ access_token: string; refresh_token: string; user: any }>("/register", { method: "POST", body: data }),
+  refreshToken: (refreshToken: string) =>
+    apiRequest<{ access_token: string }>("/refresh-token", { method: "GET" }),
+  logout: (token?: string) =>
+    apiRequest<void>("/logout", { method: "POST", token }),
+  getProfile: (token?: string) =>
+    apiRequest<any>("/me", { token }),
 };
 
 // Students API

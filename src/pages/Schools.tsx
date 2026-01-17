@@ -30,7 +30,7 @@ import { Plus, Trash2, Building2, Mail, Phone, MapPin, Loader2 } from "lucide-re
 
 export default function Schools() {
   const { schools, setSchools, setActiveSchool, activeSchool } = useSchool();
-  const { session } = useAuth();
+  const { token } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -46,12 +46,12 @@ export default function Schools() {
 
   useEffect(() => {
     fetchSchools();
-  }, [session]);
+  }, [token]);
 
   const fetchSchools = async () => {
     setIsLoading(true);
     try {
-      const data = await schoolsApi.getAll(session?.access_token);
+      const data = await schoolsApi.getAll(token);
       setSchools(data);
     } catch (error) {
       toast({
@@ -69,7 +69,7 @@ export default function Schools() {
     setIsSubmitting(true);
 
     try {
-      const newSchool = await schoolsApi.create(formData, session?.access_token);
+      const newSchool = await schoolsApi.create(formData, token);
       setSchools([...schools, newSchool]);
       setIsDialogOpen(false);
       setFormData({ name: "", address: "", phone: "", email: "" });
@@ -92,7 +92,7 @@ export default function Schools() {
     if (!deleteId) return;
 
     try {
-      await schoolsApi.delete(deleteId, session?.access_token);
+      await schoolsApi.delete(deleteId, token);
       setSchools(schools.filter((s) => s.id !== deleteId));
       
       if (activeSchool?.id === deleteId) {
