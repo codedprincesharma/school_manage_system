@@ -72,7 +72,7 @@ export function DataTable<T extends { id: string }>({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* <TableBody>
           {data.map((item) => (
             <TableRow
               key={item.id}
@@ -93,7 +93,7 @@ export function DataTable<T extends { id: string }>({
               ))}
             </TableRow>
           ))}
-        </TableBody>
+        </TableBody> */}
       </Table>
     </div>
   );

@@ -38,13 +38,13 @@ export function SchoolSelector() {
           <SelectValue placeholder="Select a school" />
         </div>
       </SelectTrigger>
-      <SelectContent>
+      {/* <SelectContent>
         {schools.map((school) => (
           <SelectItem key={school.id} value={school.id}>
             {school.name}
           </SelectItem>
         ))}
-      </SelectContent>
+      </SelectContent> */}
     </Select>
   );
 }
